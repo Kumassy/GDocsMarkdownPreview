@@ -11,51 +11,56 @@
             bottom: 56px;
             top: 0;
         }
-        
+
         .branding-text a {
             color: #888;
         }
-        
+
         .branding-text {
             color: #aaa;
             float: right;
             top: 5px;
             position: relative;
         }
-        
+
         .col-contain {
             overflow: hidden;
         }
-        
+
         .col-one {
             float: left;
             width: 50%;
         }
-        
+
         .logo {
             vertical-align: middle;
         }
-        
+
         .radio-spacer {
             height: 20px;
         }
-        
+
         .width-100 {
             width: 100%;
         }
-        
+
         .markdown-body h1 {
             font-size: 1.75em !important;
         }
-        
+
         .markdown-body h2 {
             font-size: 1.5em !important;
         }
-        
+
         .markdown-body h3 {
             font-size: 1.25em !important;
         }
-        
+
+        .markdown-body pre .code-output {
+          background: black;
+          color: white;
+        }
+
         .sidebar.bottom {
             border-top: 1px solid #ddd;
         }
@@ -123,6 +128,17 @@
                         $("#result").html(html);
 
                         $('pre code').each(function(i, block) {
+                            evaluateScript(block)
+                              .then(function(res) {
+                                console.log(res);
+                                var div = $('<div class="code-output">' + '<div class="program_output">' + res.program_output + '</div>' + '<div class="status">' + res.status + '</div>' + '</div>');
+                                $(block).after(div);
+                              })
+                              .catch(function(res) {
+                                console.log(res);
+                                showError(res, $('#button-bar'));
+                              });
+
                             hljs.highlightBlock(block);
                         });
 
@@ -148,6 +164,60 @@
         function showError(msg, element) {
             var div = $('<div id="error" class="error">' + msg + '</div>');
             $(element).after(div);
+        }
+
+        function examineScript(dom) {
+          // return body, stdin, option
+          console.log(dom);
+
+          var language = Array.from(dom.classList)
+            .filter((f) => f.match(/language-(.+)/))
+            .map((f) => {
+              var result = f.match(/language-(.+)/);
+              return result[1]
+            })[0];
+          var body = dom.innerHTML;
+
+          console.log("language: ");
+          console.log(language);
+
+          console.log("body: ");
+          console.log(body);
+
+          return [language, body];
+        }
+
+        function evaluateScript(scriptDom) {
+          var language, body;
+          [language, body] = examineScript(scriptDom);
+
+          return executeScript(language, body)
+        }
+
+        function executeScript(language, body) {
+          const list = {
+            bash: 'bash'
+          };
+          const compiler = list[language];
+
+          var myInit = {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/json, text/plain, */*',
+              'Content-Type': 'application/json'
+            },
+            mode: 'cors',
+            cache: 'default',
+            body: JSON.stringify({
+              "code": body,
+              "options": "",
+              "compiler": compiler,
+              "compiler-option-raw": ""
+            })
+          };
+          return fetch('https://wandbox.org/api/compile.json', myInit).then(function(response) {
+            return response.json()
+          })
         }
     </script>
 </body>
