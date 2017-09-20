@@ -191,12 +191,24 @@
           var language, body;
           [language, body] = examineScript(scriptDom);
 
-          return executeScript(language, body)
+          if (language == null || body == null) {
+            return new Promise((resolve, reject) => {
+              reject("failed to detect language or source code");
+            });
+          } else {
+            return executeScript(language, body)
+          }
         }
 
         function executeScript(language, body) {
           const list = {
-            bash: 'bash'
+            bash: 'bash',
+            ruby: 'ruby-head',
+            javascript: 'nodejs-head',
+            python: 'pypy-head',
+            cpp: 'gcc-head',
+            java: 'openjdk-head',
+            haskell: 'ghc-head'
           };
           const compiler = list[language];
 
